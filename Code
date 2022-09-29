@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import cmath as math
+
+h = math.sqrt(2)
+
+def tracercercle(rayon):
+    angle=[2*np.pi/100*k for k in range(101)]
+    radius=rayon
+
+    x=[radius*np.cos(k) for k in angle]
+    y=[radius*np.sin(k) for k in angle]
+    plt.clf()
+    plt.axis("equal")
+    plt.plot(x,y)
+    plt.show()
+
+
+def remplir_cercle(N,rayon):   # fonction principale qui réalise le pavage 
+    
+    if N <= 2:
+        return "impossible de tracer les polygones"
+    
+    print(tracercercle(rayon))
+    d=2*h*np.cos(np.pi/N)
+    C,z1=(0),(1+1j)                         #initialisations 
+    centres_actifs = [C]
+    centretot = [C]
+    sommetot = [z1]
+    
+    c = rayon/(2*h)          # majorant du nombre d'itération (nb de "vagues" de polygones créés)
+    
+    for k in range(int(abs(c))):                   
+       coloniser(centres_actifs,centretot,sommetot,N,h,rayon,d)  
+                
+    return (int((len(sommetot)-1)/N)) 
+
+    
+
+def coloniser(centres_actifs,centretot,sommetot,N,h,rayon,d):   # applique la fonction polygone à une série de centres actifs
+    centre_a = centres_actifs
+    
+    for i in centres_actifs:                    # on parcourt la liste des centres actifs pour leur appliquer la fonction polygone 
+        a=polygone(i,centretot,sommet_init(i,sommetot,h),N,rayon,d)   # return liste de [nouveaux centres, sommet] d'un centre actif
+        
+        centre_a.remove(i)                      # on retire le centre actif utilisé 
+        centre_a += a[0]                        # on ajoute à la liste de centre actifs les nouveaux centres créés 
+        sommetot += a[1]                        # on ajoute à la liste des sommets les nouveaux sommets
+            
+    return (sommetot)
+
+
+
+def sommet_init(k,sommetot,h):   # choisi le 1er sommet correspondant à un centre actif pour tracer polygone
+    a=[]
+    
+    for i in range(len(sommetot)):
+        if abs(k-sommetot[i])<=abs(h) and abs(k-sommetot[i])>=abs(h-0.5):       # si la distance entre le centre actif et le sommet est h
+            a.append(sommetot[i])                                     # on ajoute ce sommet à une liste
+   
+    if a==[]:                                                         # pas de sommet correspondant
+        return []                    
+    else : 
+        return a[-1]             # return l'un des sommets qui fonctionne
+      
+        
+def polygone(C,centretot,S1,N,rayon,d):              # trace un polygone à partir d'un centre actif et d'un sommet,
+                                                     # puis return les nouveaux centres existants autour  
+
+    #listes des coordonnées de tous les sommets du polygone
+    x=[np.real(S1)]+[0 for k in range(N)]      # création d'une liste [S1,0,0,0,0...] de taille N+1 pour tracer le polygone
+    y=[np.imag(S1)]+[0 for k in range(N)]
+    sommets = []                            # initialisations des sommets du polygone 
+    nouveaux_centres=[]                     # initialisations des nouveaux centres possibles autour du polygone
+
+    z1=S1               #z1 parcourt les affixes des sommets du polygone fixé
+   
+    for k in range(N):
+        z2=np.exp(2*np.pi/N*1j)*(z1-C)+C    # création du sommet suivant (symétrie centrale de 2pi/N)
+        x[k+1] = np.real(z2) 
+        y[k+1] = np.imag(z2)
+        z=z1+z2-C                           # création d'un nouveau centre potentiel (symétrique du centre actif)
+        sommets.append(z2)                  # ajoute le nouveau sommet à la liste des sommets du polygone
+        
+    # vérifie que le nouveau centre est assez loin des autres pour que les polygones ne se recoupent pas 
+        s=0
+        for i in centretot:                 #  parcourt la liste des centres existants   
+            if abs(z-i)>=d-0.001:           # vérifie que z est assez loin du centre étudié 
+                s+=1
+        if s == len(centretot):             # si tous les centres sont assez loin
+            nouveaux_centres.append(z)      # ajout de ce centre à la liste des nouveaux centres 
+            centretot.append(z)
+        z1=z2
+    a = [abs(i)for i in sommets]
+    if (max(a)) <= rayon:                   # trace le polygone ssi tous les sommets sont dans le cercle
+        plt.plot(x,y)
+        plt.show()
+        return nouveaux_centres,sommets
+    return [[],[]]
